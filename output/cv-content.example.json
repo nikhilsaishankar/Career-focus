@@ -1,0 +1,47 @@
+{
+  "lang": "en",
+  "name": "Your Name",
+  "phone": "+91 90000 00000",
+  "email": "you@example.com",
+  "linkedin_url": "https://www.linkedin.com/in/your-handle",
+  "linkedin_display": "linkedin.com/in/your-handle",
+  "portfolio_url": "https://your-portfolio.dev",
+  "portfolio_display": "your-portfolio.dev",
+  "location": "City, Country",
+  "summary": "One-paragraph summary of who you are. Mention your years of experience and your strongest, TRUE skills (these become the keywords the ATS matches and the tailoring re-orders). Never list a skill you don't actually have.",
+  "competencies": [
+    "CI/CD",
+    "Containers & Orchestration",
+    "Cloud Infrastructure",
+    "Monitoring & Observability"
+  ],
+  "skills": [
+    { "category": "CI/CD & Automation", "items": ["Jenkins", "GitHub Actions", "ArgoCD"] },
+    { "category": "Containerisation & Orchestration", "items": ["Docker", "Kubernetes", "Helm"] },
+    { "category": "Cloud Platforms", "items": ["AWS (EC2, ECS, IAM)"] },
+    { "category": "Monitoring", "items": ["Prometheus", "Grafana"] },
+    { "category": "Scripting", "items": ["Bash", "Python"] },
+    { "category": "Version Control", "items": ["Git", "GitHub"] }
+  ],
+  "experience": [
+    {
+      "company": "Your Current Company",
+      "role": "DevOps Engineer",
+      "period": "Mon YYYY - Present",
+      "location": "City, Country",
+      "bullets": [
+        "What you built/own — name the real tools (Jenkins, Docker, AWS...). Use **bold** for the tech keywords; the builder renders them.",
+        "A metric where you can: reduced deploy time by 40%, etc."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "A Project Name",
+      "desc": "One line on what it does and the stack you used."
+    }
+  ],
+  "education": [
+    { "degree": "B.Tech, Computer Science", "school": "Your University", "period": "YYYY - YYYY" }
+  ]
+}

@@ -1,0 +1,23 @@
+node_modules/
+# personal scan data, results, generated artifacts
+data/*-scan.json
+data/*-scan.md
+data/*-scan-history.tsv
+data/*.log
+data/.module-scratch/
+data/.dispatch/
+data/apply-questions.md
+data/applied-log.tsv
+reports_stats/
+output/tailored.*
+output/*.html
+# never commit credentials or generated PDFs
+credentials.json
+*.pdf
+.DS_Store
+.env
+
+# personal résumé (each user provides their own; copy from the .example files)
+cv.md
+output/cv-content.json
+config/profile.yml
