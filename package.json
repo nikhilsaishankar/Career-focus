@@ -7,7 +7,8 @@
     "scan": "node scan-remote.mjs && node scan-simplyhired.mjs && node scan-foundit.mjs",
     "workbook": "node build-workbook.mjs",
     "process": "node process-scans.mjs",
-    "stats": "node scan-stats.mjs"
+    "stats": "node scan-stats.mjs",
+    "all": "bash run-all.sh"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

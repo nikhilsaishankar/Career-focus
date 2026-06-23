@@ -84,29 +84,40 @@ mkdir -p ~/Downloads/H        # drop your CV-<You>.pdf here
 
 ### Then run it
 
+**The one command** — scan all 15 boards → score → tailor → build the workbook → open it:
+
 ```bash
-# 1. log in once to the gated boards (a window opens — sign in, it saves the session)
+# first time only: log in once to the gated boards (a window opens, sign in, it saves)
 node scan-naukri.mjs --login
 node scan-hirist.mjs --login
 node scan-instahyre.mjs --login
 node scan-wellfound.mjs --login
 
-# 2. scan the boards
-node scan-remote.mjs && node scan-simplyhired.mjs && node scan-foundit.mjs
-node scan-indeed.mjs --headless && node scan-cutshort.mjs --headless && node scan-nodeflair.mjs --headless
-node scan-naukri.mjs --headless && node scan-hirist.mjs && node scan-instahyre.mjs && node scan-wellfound.mjs
-node scan-glassdoor.mjs        # visible
-
-# 3. score every job against YOUR cv + tailor résumés for the matches
-node process-scans.mjs
-node gen-pass-pdfs.mjs
-
-# 4. build + open the master workbook
-node build-workbook.mjs
-open reports_stats/$(date +%F)/MASTER.xlsx
+# then, every time you want a fresh sweep:
+bash run-all.sh          #  (or: npm run all)
 ```
 
-Now `MASTER.xlsx` has every role across 15 boards, scored, with tailored résumés. To **auto-apply** to the green matches on a portal:
+That's it — `MASTER.xlsx` opens with every role across 15 boards, scored, with tailored résumés. Add a number to cap jobs per board: `bash run-all.sh 15`.
+
+<details>
+<summary>What <code>run-all.sh</code> runs under the hood (if you'd rather do it step by step)</summary>
+
+```bash
+# scan the boards (headless where possible, Glassdoor/Wellfound visible)
+node scan-remote.mjs && node scan-simplyhired.mjs && node scan-foundit.mjs
+node scan-devops.mjs && node scan-indeed.mjs --headless && node scan-cutshort.mjs --headless && node scan-nodeflair.mjs --headless
+node scan-naukri.mjs --headless && node scan-hirist.mjs --headless && node scan-instahyre.mjs --headless && node scan-wellfound.mjs
+node scan-glassdoor.mjs
+
+node accumulate.mjs        # keep every portal's full set across runs (nothing disappears)
+node process-scans.mjs     # ATS-score every job against YOUR cv + fill the funnel
+node gen-pass-pdfs.mjs     # tailored résumé PDF per matching company
+node build-workbook.mjs    # build the master workbook
+open reports_stats/$(date +%F)/MASTER.xlsx
+```
+</details>
+
+To **auto-apply** to the green matches on a portal:
 
 ```bash
 node apply-hirist.mjs --dry    # safe preview (locates Apply, doesn't submit)
@@ -126,6 +137,10 @@ Everything below explains each piece in detail.
                ▼
         data/*-scan.json          (raw jobs: company, role, link, JD)
                │
+               ▼
+   ┌────────────────────────┐
+   │  accumulate.mjs        │   merge into a durable pool — every portal keeps its full
+   └───────────┬────────────┘   set across runs (scores + applied status preserved)
                ▼
    ┌────────────────────────┐
    │  process-scans.mjs     │   ATS score vs your CV → JD-fit + insight
@@ -197,6 +212,7 @@ Career-focus/
 ├── build-resume.mjs           # fill the HTML template from a content JSON
 ├── generate-pdf.mjs           # HTML → PDF (Playwright)
 │
+├── accumulate.mjs             # keep every portal's FULL job set across runs (nothing disappears)
 ├── build-workbook.mjs         # the ONE master workbook (tab per portal)
 ├── funnel-to-xlsx.mjs         # markdown funnel → colored xlsx (helper)
 ├── reports-paths.mjs          # date-wise output paths
@@ -204,6 +220,7 @@ Career-focus/
 ├── apply-hirist.mjs           # auto-apply agent — Hirist
 ├── apply-instahyre.mjs        # auto-apply agent — Instahyre
 │
+├── run-all.sh                 # THE one command: scan all → score → tailor → workbook
 ├── scan-dispatcher.sh         # runs the whole loop each slot (3×/day)
 ├── auto-process.sh            # agent pass: fills no-JD jobs + walled boards
 ├── daily-devops.sh            # LinkedIn refresh helper
@@ -393,6 +410,9 @@ Browser scanners run **headless** (no popups) where they can; Glassdoor/Wellfoun
 
 | Command | Purpose |
 |---------|---------|
+| **`bash run-all.sh [N]`** | **the one command** — scan all 15 → score → tailor → workbook (cap N/board) |
+| `npm run all` | alias for `run-all.sh` |
+| `node accumulate.mjs` | keep every portal's full set across runs (run after scans/applies) |
 | `node scan-<board>.mjs [N]` | scan one board, cap at N new jobs |
 | `node scan-<board>.mjs --login` | one-time interactive login (gated boards) |
 | `node scan-<board>.mjs --headless` | run a browser scanner with no window |
