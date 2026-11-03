@@ -1,0 +1,10 @@
+{
+  "fullName": "Your Name",
+  "email": "you@example.com",
+  "phone": "+00 00000 00000",
+  "profileDir": "~/main/profile",
+  "coverLetterMaster": "Cover-Letter.md",
+  "coverLetterPrefix": "Cover-Letter",
+  "resumePath": "~/main/profile/Resume_DevOps_Engineer.pdf",
+  "naukriUploadName": "Resume-DevOps-Engineer.pdf"
+}

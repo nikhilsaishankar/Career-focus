@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.careerops.wake-scheduler</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__CAREER_OPS_REPO__/scripts/pipelines/schedule-wakes.sh</string>
+    </array>
+
+    <!-- arm wakes at load (boot) and shortly after midnight; missed runs
+         coalesce onto the next wake, and the script covers today+tomorrow
+         so an evening run already has the next morning armed -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>0</integer><key>Minute</key><integer>5</integer></dict>
+        <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>30</integer></dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>__CAREER_OPS_REPO__/data/wake-scheduler.log</string>
+    <key>StandardErrorPath</key>
+    <string>__CAREER_OPS_REPO__/data/wake-scheduler.log</string>
+</dict>
+</plist>

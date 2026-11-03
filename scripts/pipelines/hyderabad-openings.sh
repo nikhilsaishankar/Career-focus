@@ -1,0 +1,128 @@
+#!/bin/bash
+# hyderabad-openings.sh — STRICT daily Hyderabad pipeline (per user 2026-07-17).
+# Naukri + LinkedIn + Google jobs tab → "DevOps Engineer" · Hyderabad · exp ≤ 4 yrs →
+# HYDERABAD.xlsx (new-today only, cross-day dedup) + master sheet + apply prep.
+#
+# Fired by launchd (com.nikhil.careerops-hyderabad) at 10:00 / 17:00 / 22:00, headless.
+# Guarantees (naukri-refresh-strict.sh pattern):
+#   1. single-flight lock  2. up to 2 attempts, 5 min apart  3. every attempt audited
+#   to data/hyderabad-audit.log; per-slot ✅/⚠️/❌ table in module16-Hyderabad.md.
+
+DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$DIR" || exit 1
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+NODE=/opt/homebrew/bin/node
+LOG=data/hyderabad-openings.log
+AUDIT=data/hyderabad-audit.log
+LOCK="/tmp/hyderabad-openings.lock"
+
+# Authoritative slot for the audit tables. The dispatcher catch-up passes HYD_SLOT
+# for the slot it is replaying (a 10:00 slot replayed at 15:30 must still credit 10:00);
+# a normal launchd run computes it from the clock.
+if [ -z "$HYD_SLOT" ]; then
+  H=$(date +%H)
+  if [ "$H" -lt 6 ]; then HYD_SLOT=03:00; elif [ "$H" -lt 14 ]; then HYD_SLOT=08:00; elif [ "$H" -lt 19 ]; then HYD_SLOT=18:00; else HYD_SLOT=20:00; fi
+fi
+SLOT="$HYD_SLOT"
+export HYD_SLOT
+
+audit() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] slot=$SLOT $*" >> "$AUDIT"; }
+
+# -- single-flight lock (stale after 40 min) ---------------------------------
+if ! mkdir "$LOCK" 2>/dev/null; then
+  age=$(( $(date +%s) - $(stat -f %m "$LOCK" 2>/dev/null || echo 0) ))
+  if [ "$age" -lt 2400 ]; then
+    audit "attempt=0 result=SKIPPED reason=another run in progress (lock ${age}s old)"
+    exit 0
+  fi
+  audit "attempt=0 note=stale lock (${age}s) — taking over"
+  rm -rf "$LOCK"; mkdir "$LOCK" || exit 1
+fi
+trap 'rm -rf "$LOCK"' EXIT
+
+run_pipeline() {
+  echo "===== $(date) hyderabad pipeline (slot $SLOT) =====" >> "$LOG"
+  # MULTI-QUERY SWEEP (per user 2026-07-25: "not a single job below 4 yrs missed").
+  # One search phrase per DevOps-family title — a posting titled "Site Reliability
+  # Engineer" never surfaces on a "DevOps Engineer" search. accumulate.mjs runs after
+  # every scan because each run overwrites the scan JSON; the pool keeps the union.
+
+  # 1) LinkedIn (India-wide incl. Hyderabad; dedups via history) — family sweep
+  for KW in '"DevOps Engineer"' '"Site Reliability Engineer"' '"Platform Engineer"' '"Cloud Engineer"'; do
+    "$NODE" scripts/scan/scan-devops.mjs --kw="$KW" >> "$LOG" 2>&1
+    "$NODE" scripts/scan/accumulate.mjs >> "$LOG" 2>&1
+  done
+  # 2) Naukri — dedicated Hyderabad queries, NO experience param (server filter hides
+  #    sub-4yr bands); the scanner's own code filter drops floor-5+ roles.
+  for NURL in \
+    "https://www.naukri.com/devops-engineer-jobs-in-hyderabad?k=%22devops%20engineer%22&l=hyderabad" \
+    "https://www.naukri.com/site-reliability-engineer-jobs-in-hyderabad?k=%22site%20reliability%20engineer%22&l=hyderabad" \
+    "https://www.naukri.com/cloud-engineer-jobs-in-hyderabad?k=%22cloud%20engineer%22%20aws&l=hyderabad" \
+    "https://www.naukri.com/kubernetes-jobs-in-hyderabad?k=kubernetes%20devops&l=hyderabad"; do
+    "$NODE" scripts/scan/scan-naukri.mjs "$NURL" --headless >> "$LOG" 2>&1
+    "$NODE" scripts/scan/accumulate.mjs >> "$LOG" 2>&1
+  done
+  # 3) Google jobs tab — the "whatever is on the internet" aggregator (Shine, TimesJobs,
+  #    Foundit, company ATS boards). Query sweep, then one backfill pass for JDs that
+  #    earlier runs couldn't fetch (Google soft-rate-limits detail pages).
+  for GQ in \
+    '"devops engineer" jobs in hyderabad' \
+    '"site reliability engineer" jobs in hyderabad' \
+    '"platform engineer" jobs in hyderabad' \
+    '"cloud engineer" aws jobs in hyderabad' \
+    'kubernetes engineer jobs in hyderabad' \
+    'aws devops engineer jobs in hyderabad'; do
+    "$NODE" scripts/scan/scan-google.mjs --q="$GQ" --headless >> "$LOG" 2>&1
+    "$NODE" scripts/scan/accumulate.mjs >> "$LOG" 2>&1
+  done
+  "$NODE" scripts/scan/scan-google.mjs --backfill --headless >> "$LOG" 2>&1
+  "$NODE" scripts/scan/accumulate.mjs >> "$LOG" 2>&1
+  # 4) score
+  "$NODE" scripts/scan/process-scans.mjs >> "$LOG" 2>&1
+  # 4b) AGENT pass — fills every row deterministic scoring couldn't (no JD → WebFetch/
+  #     WebSearch the posting + score). STRICT rule: no ⏳ left on the sheets.
+  bash scripts/pipelines/auto-process.sh
+  # 4c) résumé generation — RESTORED (per user 2026-08-16, reverting the 2026-08-12/08-14
+  # opt-out): build a tailored PDF for every job that just cleared pass=true, deduped per
+  # company per day. Resync output/cv-content.json from the base first (goes stale silently).
+  cp data/resume-base.content.json output/cv-content.json
+  # DISABLED 2026-10-14 per Nikhil ("no need company wise folder — i need only sheet hyderabad and
+  # naukri sheet under date wise folder"): no per-company tailored PDFs are generated by the
+  # automation any more. reports_stats/<date>/ keeps HYDERABAD.xlsx + NAUKRI.xlsx only.
+  # Manual /jd résumés are unaffected (they still go to ~/main/profile/manual/<Company>/).
+  # "$NODE" scripts/resume/gen-pass-pdfs.mjs >> "$LOG" 2>&1
+  "$NODE" scripts/scan/accumulate.mjs >> "$LOG" 2>&1
+  # 5) sheets: HYDERABAD only (master sheet REMOVED per user 2026-07-25 — one goal:
+  #    Hyderabad) + the date-wise application tracker.
+  "$NODE" scripts/sheets/build-tracker.mjs >> data/master-sheet.log 2>&1
+  "$NODE" scripts/sheets/build-hyderabad-sheet.mjs >> "$LOG" 2>&1
+}
+
+# macOS notification so no slot result is ever missed (per user 2026-07-25).
+# Notifications disabled per Nikhil 2026-10-26 — the day-wise sheet is the status surface.
+notify() { :; }
+
+for attempt in 1 2; do
+  run_pipeline
+  code=$?
+  if [ "$code" -eq 0 ]; then
+    audit "attempt=$attempt result=OK"
+    # Job notification: pull this run's new-count from the audit line the builder wrote.
+    N=$(tail -1 "$AUDIT" | sed -n 's/.*new=\([0-9]*\).*/\1/p')
+    if [ -n "$N" ] && [ "$N" -gt 0 ]; then
+      notify "$N new Hyderabad DevOps job(s) — slot $SLOT. Open HYDERABAD.xlsx"
+    else
+      notify "Slot $SLOT done — no new Hyderabad jobs this run"
+    fi
+    # Slot marker — lets the dispatcher catch-up know this slot already ran
+    # (touched only on success, and only at the END: dispatcher double-fire lesson).
+    mkdir -p data/.dispatch && touch "data/.dispatch/$(date +%F)-hyd-$SLOT"
+    exit 0
+  fi
+  audit "attempt=$attempt result=FAIL exit=$code (see data/hyderabad-openings.log)"
+  [ "$attempt" -lt 2 ] && sleep 300
+done
+
+audit "result=SLOT-FAILED after 2 attempts"
+notify "Slot $SLOT FAILED after 2 attempts — check data/hyderabad-openings.log"
+exit 1

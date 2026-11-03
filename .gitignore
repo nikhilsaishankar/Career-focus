@@ -1,23 +1,32 @@
 node_modules/
-# personal scan data, results, generated artifacts
-data/*-scan.json
-data/*-scan.md
-data/*-scan-history.tsv
-data/*.log
-data/.module-scratch/
-data/.dispatch/
-data/apply-questions.md
-data/applied-log.tsv
+
+# ── Personal data: scan output, logs, ledgers, sheets ────────────────────────
+data/*
+!data/.gitkeep
 reports_stats/
-output/tailored.*
-output/*.html
-# never commit credentials or generated PDFs
+reports/
+jds/
+
+# ── Your identity + logins (never commit) ────────────────────────────────────
+# Real credentials live OUTSIDE the repo, in ~/.career-ops/credentials.json.
+config/profile.json
+config/credentials.json
 credentials.json
-*.pdf
-.DS_Store
 .env
 
-# personal résumé (each user provides their own; copy from the .example files)
+# ── Your résumé + generated artifacts ────────────────────────────────────────
 cv.md
-output/cv-content.json
-config/profile.yml
+output/*
+!output/cv-content.example.json
+!output/.gitkeep
+*.pdf
+*.docx
+*.xlsx
+
+# ── Login / debug artifacts ──────────────────────────────────────────────────
+*-login.png
+*-probe.png
+.playwright-mcp/
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store

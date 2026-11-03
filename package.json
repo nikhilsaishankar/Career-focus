@@ -1,19 +1,43 @@
 {
   "name": "career-focus",
-  "version": "1.0.0",
-  "description": "Multi-portal DevOps job-search automation — scan 15 boards, ATS-score against your CV, tailor resumes, and auto-apply to the matches. One master Excel workbook.",
+  "version": "5.0.0",
+  "description": "Multi-portal DevOps job-search automation — sweep the boards, gate every role against a strict fit filter, score it against your CV, and roll the survivors into date-wise Excel sheets.",
   "type": "module",
   "scripts": {
-    "scan": "node scan-remote.mjs && node scan-simplyhired.mjs && node scan-foundit.mjs",
-    "workbook": "node build-workbook.mjs",
-    "process": "node process-scans.mjs",
-    "stats": "node scan-stats.mjs",
-    "all": "bash run-all.sh"
+    "all": "bash scripts/pipelines/run-all.sh",
+    "hyderabad": "bash scripts/pipelines/hyderabad-openings.sh",
+    "apply": "bash scripts/pipelines/apply-all.sh",
+    "scan:linkedin": "node scripts/scan/scan-devops.mjs",
+    "scan:naukri": "node scripts/scan/scan-naukri.mjs --headless",
+    "scan:google": "node scripts/scan/scan-google.mjs --headless",
+    "scan:indeed": "node scripts/scan/scan-indeed.mjs --headless",
+    "scan:hirist": "node scripts/scan/scan-hirist.mjs --headless",
+    "scan:instahyre": "node scripts/scan/scan-instahyre.mjs --headless",
+    "accumulate": "node scripts/scan/accumulate.mjs",
+    "process": "node scripts/scan/process-scans.mjs",
+    "stats": "node scripts/scan/scan-stats.mjs",
+    "sheet": "node scripts/sheets/build-hyderabad-sheet.mjs",
+    "tracker": "node scripts/sheets/build-tracker.mjs",
+    "gate": "node scripts/lib/check-gate.mjs",
+    "ats": "node scripts/resume/ats-check.mjs",
+    "cover-letter": "node scripts/resume/make-cover-letter.mjs",
+    "resume:docx": "node scripts/resume/build-resume-docx.mjs",
+    "naukri:refresh": "node scripts/naukri/naukri-refresh.mjs",
+    "pdf": "node generate-pdf.mjs"
   },
+  "keywords": [
+    "job-search",
+    "devops",
+    "automation",
+    "playwright",
+    "ats",
+    "naukri",
+    "linkedin"
+  ],
   "dependencies": {
+    "docx": "^9.0.0",
     "exceljs": "^4.4.0",
-    "js-yaml": "^4.1.0",
-    "playwright": "^1.47.0"
+    "playwright": "^1.58.1"
   },
   "license": "MIT"
 }
